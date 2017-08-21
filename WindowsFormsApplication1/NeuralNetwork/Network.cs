@@ -25,7 +25,7 @@ namespace NeuralNetwork
 
                 //Create the current layers neurons
                 var neurons = new List<Neuron>();
-                for (int neuronCount = 0; neuronCount <= topology[layerNumber]; neuronCount++)
+                for (int neuronCount = 0; neuronCount < topology[layerNumber]; neuronCount++)
                 {
                     neurons.Add(new Neuron(numberOfOutput, neuronCount));
                 }
@@ -78,10 +78,13 @@ namespace NeuralNetwork
             Error = Math.Sqrt(Error); //Root to get RMS (root square mean)
 
             //Implement a recent average measurement
+            //Not used yet
             RecentAverageError = (RecentAverageError * RecentAverageErrorSmoothingFactor + Error) / (RecentAverageError + 1.0);
 
+            System.Console.WriteLine($"Error: {Error}, Recent Average Error: {RecentAverageError}");
+
             //Calculate output layer gradients
-            for(int n = 0; n < outputLayer.Count -1; n++)
+            for(int n = 0; n < outputLayer.Count - 1; n++)
             {
                 outputLayer[n].CalculateOutputGradient(targetValues[n]);
             }
@@ -95,6 +98,19 @@ namespace NeuralNetwork
                 for (int n = 0; n < layer.Count - 1; n++)
                 {
                     layer[n].CalculateHiddenGradient(nextLayer);
+                }
+            }
+
+            //For all layers from output to first hidden layers
+            //Update connection weights
+            for (int layerNumber = Layers.Count - 1; layerNumber > 0; layerNumber--)
+            {
+                List<Neuron> layer = Layers[layerNumber];
+                List<Neuron> previousLayer = Layers[layerNumber - 1];
+
+                for (int n = 0; n < layer.Count - 1; n++)
+                {
+                    layer[n].UpdateInputWeights(previousLayer);
                 }
             }
         }

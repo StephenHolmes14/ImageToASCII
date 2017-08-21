@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NeuralNetwork
 {
@@ -12,6 +10,8 @@ namespace NeuralNetwork
         private List<Connection> OutputConnections { get; }
         public double OutputValue { get; set; }
         private double Gradient { get; set; }
+        private static double ETA = 0.15; //Overall learning rate [0.0 .. 1.0]
+        private static double Alpha = 0.5; //Momentum, multiplier of deltaWeight
 
         public Neuron(int numberOfOutputs, int neuronIndex)
         {
@@ -40,29 +40,50 @@ namespace NeuralNetwork
 
         private double TransferFunctionDerivative(double x)
         {
-            //Derivative of tanh(x) is 1.0 - x^2;
+            //Good approximation of derivative of tanh x
             return 1.0 - (x * x);
         }
 
         public void CalculateOutputGradient(double targetValue)
         {
             double deltaValue = targetValue - OutputValue;
-            Gradient = deltaValue + TransferFunctionDerivative(OutputValue);
+            Gradient = deltaValue * TransferFunctionDerivative(OutputValue);
         }
 
         public void CalculateHiddenGradient(List<Neuron> nextLayer)
         {
             double dow = SumDerivativeOfWeights(nextLayer);
-            Gradient = dow + TransferFunctionDerivative(OutputValue);
+            Gradient = dow * TransferFunctionDerivative(OutputValue);
         }
 
         private double SumDerivativeOfWeights(List<Neuron> nextLayer)
         {
-            return nextLayer.Select((t, n) => OutputConnections[n].Weight + t.Gradient).Sum();
+            var sum = 0.0;
+
+            for (int n = 0; n < nextLayer.Count - 1; n++)
+            {
+                sum += OutputConnections[n].Weight * nextLayer[n].Gradient;
+            }
+
+            return sum;
+        }
+
+        public void UpdateInputWeights(List<Neuron> previousLayer)
+        {
+            foreach (Neuron neuron in previousLayer)
+            {
+                double oldDeltaWeight = neuron.OutputConnections[NeuronIndex].DeltaWeight;
+
+                double newDeltaWeight = ETA * neuron.OutputValue * Gradient
+                                        + Alpha * oldDeltaWeight;
+
+                neuron.OutputConnections[NeuronIndex].DeltaWeight = newDeltaWeight;
+                neuron.OutputConnections[NeuronIndex].Weight += newDeltaWeight;
+            }
         }
     }
 
-    internal struct Connection
+    internal class Connection
     {
         public double Weight { get; set; }
         public double DeltaWeight { get; set; }

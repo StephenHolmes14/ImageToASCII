@@ -1,29 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace NeuralNetwork
 {
     public class NeuralNetwork
     {
-        public void Start(List<int> topology)
+        /// <summary>
+        /// Starts the neural network
+        /// </summary>
+        /// <param name="topology">List of ints which represent neurons per layer</param>
+        /// <param name="filePath"></param>
+        public static IEnumerable<string> Start(List<int> topology, string filePath)
         {
+            Logger.Logger.Initialize("NeuralNetworkLogger.txt");
+
+            if (!File.Exists(filePath))
+            {
+                Logger.Logger.WriteLine("The data file could not be found.");
+                throw new FileNotFoundException("The data file could not be found!");
+            }
+
             Network network = new Network(topology);
 
-            //Todo:
-            //Implement correct loop.
-            //while ()
+            int pass = 0;
+            foreach (string line in File.ReadLines(filePath))
             {
-                List<double> inputValues = new List<double>();
-                List<double> targetValues = new List<double>();
+                pass++;
+                var values = line.Split(' ');
+                
+                var inputValues = new List<double> {Convert.ToDouble(values[0]), Convert.ToDouble(values[1])};
+                var targetValues = new List<double> {Convert.ToDouble(values[2])};
 
                 network.FeedForward(inputValues);
                 network.BackPropagate(targetValues);
 
                 List<double> resultValues = network.GetResults();
+
+                string formattedString = string.Format($"Training Pass: {pass} Input: {inputValues[0]} {inputValues[1]} Output: {resultValues[0]}");
+
+                Logger.Logger.WriteLine(formattedString);
+
+                yield return formattedString;
             }
+
+            Logger.Logger.Dispose();
         }
     }
 }
